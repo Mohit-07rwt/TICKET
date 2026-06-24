@@ -1,0 +1,63 @@
+<!--all tickets html-->
+<div class="cyform-page">
+  <div class="cyform-card">
+
+    <!-- ===================== HEADER ===================== -->
+    <div class="cyform-head">
+      <span class="cyform-head-bar"></span>
+      <i class="bi bi-ticket-detailed cyform-head-icon"></i>
+      <span class="cyform-head-title">Unassigned Tickets</span>
+      <small class="cyform-head-sub">| View unassigned tickets</small>
+    </div>
+
+    <!-- ===================== GRID ===================== -->
+    <div class="cyform-page">
+
+      <div class="cyform-card">
+
+        <div class="cyform-head">
+          <span class="cyform-head-bar"></span>
+          <i class="bi bi-ticket-detailed cyform-head-icon"></i>
+
+          <span class="cyform-head-title">
+            Unassigned Tickets
+          </span>
+
+          <small class="cyform-head-sub">
+            | View all unassigned tickets
+          </small>
+
+        </div>
+
+        <div class="cyform-body">
+
+          <app-common-grid [height]="'550px'"
+                           [rowData]="rowData"
+                           [columnDefs]="columnDefs"
+                           [width]="'100%'"
+                           [showCheckbox]="false"
+                           [showContainer]="false"
+                           [showEdit]="false"
+                           [showDelete]="false"
+                           [showDeleteAll]="false"
+                           [showExportButton]="false"
+                           [rowSelection]="{ mode: 'singleRow', enableClickSelection: true, checkboxes: false }"
+                           >
+            [showExportButton]="false">
+          </app-common-grid>
+
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- ============ TICKET DETAILS POP-UP (rendered by <app-pop-up> via PopUpService) ============ -->
+    <!--<ng-template #ticketDetailsTemplate>
+      <app-ticket-detail [ticket]="selectedTicket"
+                         (closed)="closeTicketPopup()"
+                         (changed)="onTicketChanged()">
+      </app-ticket-detail>
+    </ng-template>-->
+  </div>
+</div>
