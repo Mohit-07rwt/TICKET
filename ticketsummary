@@ -1,0 +1,464 @@
+import { Component, ViewChild, inject } from '@angular/core';
+import {
+  FormBuilder,
+  FormGroup,
+  Validators
+} from '@angular/forms';
+
+
+import { SHARED_IMPORTS } from '../../../common/shared-imports/shared-imports';
+import { DialogService } from '../../../common/dialog-new/dialog.service';
+import { CommonService } from '../../../common/loader/common.service';
+import { FocusInvalidDirective } from '../../../common/directive/validation.directive';
+import { TicketService } from '../../../services/ticket-service/ticket.service';
+//import { TicketService } from '../../../services/ticket-service/ticket-report.service';
+import { CommonGridComponent } from '../../../common/common-grid/common-grid.component';
+import { ColDef, ModuleRegistry, AllCommunityModule } from 'ag-grid-community';
+import { AgGridAngular } from 'ag-grid-angular';
+import { Ticket } from '../../tickets/all-tickets/all-ticket.model';
+import { TicketDetailComponent } from '../../../common/ticket-detail/ticket-detail.component';
+import { TicketReportService } from '../../../services/ticket-service/ticket-report.service';
+
+
+@Component({
+  selector: 'app-cyborg-ticket-summary-report',
+  imports: [SHARED_IMPORTS],
+  templateUrl: './cyborg-ticket-summary-report.component.html',
+  styleUrl: './cyborg-ticket-summary-report.component.css'
+})
+export class CyborgTicketSummaryReportComponent {
+
+  timeTrackingForm: FormGroup;
+  //rowData: Ticket[] = [];
+  rowData: any[] = [];
+
+  columnDefs: ColDef[] = [];
+
+
+
+  defaultColDef: ColDef = {
+    resizable: true,
+    sortable: true,
+    filter: true
+  };
+
+
+
+  mindate!: any;
+  maxdate: any;
+  serverDate: any;
+
+  //this.rowData = Array.isArray((res: any)) ? res : [res];
+
+  @ViewChild('focusInvalidDir')
+  focusInvalidDirective!: FocusInvalidDirective;
+
+  private dialogService = inject(DialogService);
+  private commonService = inject(CommonService);
+  private ticketService = inject(TicketService);
+  private ticketReportService = inject(TicketReportService);
+
+
+
+  constructor(private fb: FormBuilder) {
+
+    this.timeTrackingForm = this.fb.group({
+
+      ticketTaskNumber: ['', Validators.required],
+
+      Datefrom: ['', Validators.required],
+
+      Dateto: ['', Validators.required],
+
+      userName: ['', Validators.required],
+
+      startTime: ['', Validators.required],
+
+      endTime: ['', Validators.required],
+
+      totalHours: [{ value: 0, disabled: true }],
+
+      workDescription: [''],
+
+      //billingType: [0, Validators.required]
+      module: [0, Validators.required],
+
+      client: [0, Validators.required],
+
+
+    });
+
+    this.getmodule();
+    this.registerTimeCalculation();
+    this.getDate();
+  }
+
+  module: {
+    AppTypeID: number;
+    AppType: string;
+  }[] = [];
+
+  registerTimeCalculation() {
+
+    this.timeTrackingForm
+      .get('startTime')
+      ?.valueChanges
+      .subscribe(() => {
+        this.calculateHours();
+      });
+
+    this.timeTrackingForm
+      .get('endTime')
+      ?.valueChanges
+      .subscribe(() => {
+        this.calculateHours();
+      });
+  }
+
+  calculateHours() {
+
+    const start =
+      this.timeTrackingForm.get('startTime')?.value;
+
+    const end =
+      this.timeTrackingForm.get('endTime')?.value;
+
+    if (!start || !end) {
+      return;
+    }
+
+    const startDate =
+      new Date(`2000-01-01T${start}`);
+
+    const endDate =
+      new Date(`2000-01-01T${end}`);
+
+    const difference =
+      (endDate.getTime() -
+        startDate.getTime()) /
+      (1000 * 60 * 60);
+
+    this.timeTrackingForm.patchValue(
+      {
+        totalHours:
+          difference > 0
+            ? Number(difference.toFixed(2))
+            : 0
+      },
+      {
+        emitEvent: false
+      }
+    );
+  }
+
+
+  //submit()
+  //{
+  //  if (this.timeTrackingForm.invalid)
+  //  {
+  //    this.timeTrackingForm.markAllAsTouched();
+  //    this.dialogService.openAlert
+  //    (
+  //      'Alert',
+  //      'Please fill all mandatory fields.'
+  //    );
+  //    return;
+  //  }
+  //  //this.loadModuleWiseReport();
+  //}
+
+
+  resetForm() {
+
+    this.timeTrackingForm.reset({
+
+      ticketTaskNumber: '',
+
+      workDate: null,
+
+      userName: '',
+
+      startTime: '',
+
+      endTime: '',
+
+      totalHours: 0,
+
+      workDescription: '',
+
+      billingType: 0
+    });
+
+    this.getDate();
+  }
+
+
+  getDate() {
+    this.commonService.show();
+
+    this.ticketService.Get_ServerDate().subscribe({
+      next: (rows: any[]) => {
+
+        if (!rows || !rows.length) {
+          this.commonService.hide();
+          this.dialogService.openAlert('Alert', 'Failed to load server date.');
+          return;
+        }
+
+        this.commonService.show();
+
+        const serverDateStr = rows[0].ServerDate;
+        this.mindate = this.convertToDate(rows[0].mindate);
+        this.maxdate = this.convertToDate(rows[0].maxdate);
+
+        const [day, month, year] = serverDateStr.split('/').map(Number);
+        this.serverDate = new Date(year, month - 1, day);
+        // Datepicker binds to a Date; submit() converts back to yyyy-MM-dd.
+        this.timeTrackingForm.patchValue({
+          Dateto: this.serverDate,
+          Datefrom: this.serverDate
+        });
+
+        this.commonService.hide();
+
+      },
+      error: err => {
+        this.commonService.hide();
+        console.error(err);
+      }
+    });
+  }
+
+
+  convertToDate(dateStr: string): Date | null {
+    if (!dateStr) return null;
+
+    const parts = dateStr.split('/');
+    return new Date(
+      Number(parts[2]),       // year
+      Number(parts[1]) - 1,   // month
+      Number(parts[0])        // day
+    );
+  }
+
+  convertToApiDate(date: any) {
+    const d = new Date(date);
+    const month = ('0' + (d.getMonth() + 1)).slice(-2);
+    const day = ('0' + d.getDate()).slice(-2);
+    return `${d.getFullYear()}-${month}-${day}`;
+  }
+
+
+  //loadModuleWiseReport() {
+
+  //  const from = this.convertToApiDate(
+  //    this.timeTrackingForm.get('Datefrom')?.value
+  //  );
+
+  //  const to = this.convertToApiDate(
+  //    this.timeTrackingForm.get('Dateto')?.value
+  //  );
+
+  //  const moduleId = Number(
+  //    this.timeTrackingForm.get('module')?.value
+  //  );
+
+  //  console.log("From:", from);
+  //  console.log("To:", to);
+  //  console.log("ModuleId:", moduleId);
+
+  //  this.commonService.show();
+
+  //  this.ticketReportService
+  //    .getModuleWiseReport(from, to, moduleId)
+  //    .subscribe({
+
+  //      next: (res: any) => {
+
+  //        this.commonService.hide();
+
+  //        console.log("API Response:", res);
+
+  //        this.rowData = Array.isArray(res) ? res : [];
+
+  //        // ✅ AUTO COLUMN
+  //        if (this.rowData.length > 0) {
+
+  //          const firstRow = this.rowData[0];
+
+  //          this.columnDefs = Object.keys(firstRow).map((key) => ({
+  //            headerName: this.formatHeader(key),
+  //            field: key,
+  //            sortable: true,
+  //            filter: true,
+  //            resizable: true,
+  //            hide: key === 'TID'
+  //          }));
+
+  //        } else {
+  //          this.columnDefs = [];
+  //        }
+
+  //        console.log("Row Count:", this.rowData.length);
+  //        console.log("Columns:", this.columnDefs);
+
+  //      },
+
+  //      error: (err: any) => {
+
+  //        this.commonService.hide();
+
+  //        console.error("API Error:", err);
+
+  //        this.rowData = [];
+  //        this.columnDefs = [];
+
+  //      }
+
+  //    });
+
+  //}
+
+
+
+  loadModuleWiseReport() {
+
+    const from = this.convertToApiDate(
+      this.timeTrackingForm.get('Datefrom')?.value
+    );
+
+    const to = this.convertToApiDate(
+      this.timeTrackingForm.get('Dateto')?.value
+    );
+
+    const moduleId = Number(
+      this.timeTrackingForm.get('module')?.value
+    );
+
+    this.commonService.show();
+
+    this.ticketReportService
+      .getTicketSummaryReport(from, to)
+      .subscribe({
+
+        next: (res: any) => {
+
+          this.commonService.hide();
+
+          this.rowData = Array.isArray(res) ? res : [];
+
+          if (this.rowData.length > 0) {
+
+            const firstRow = this.rowData[0];
+
+            const hiddenFields: string[] = [
+              'TID',
+              'DeletedDate',
+              'InsertedBy',
+              'InsertedDate',
+              'UpdatedBy',
+              'UpdatedDate',
+              'Assigned To',
+              'Assigned Team',
+              'Assigned Date',
+              'Target Date',
+              'Assignment Remarks'
+            ];
+
+            this.columnDefs = Object.keys(firstRow).map((key) => ({
+              headerName: this.formatHeader(key),
+              field: key,
+              sortable: true,
+              filter: true,
+              resizable: true,
+              hide: hiddenFields.includes(key)
+            }));
+
+          } else {
+            this.columnDefs = [];
+          }
+
+        },
+
+        error: (err: any) => {
+
+          this.commonService.hide();
+
+          this.rowData = [];
+          this.columnDefs = [];
+
+        }
+
+      });
+
+  }
+
+  // Optional: readable header format
+  formatHeader(key: string): string {
+    return key
+      .replace(/([A-Z])/g, ' $1')
+      .replace(/_/g, ' ')
+      .replace(/^./, (str) => str.toUpperCase());
+  }
+
+
+
+  //getModuleWiseReport() {
+  //  this.CommonService.show();
+
+  //  this.ticketService.getModuleWiseReport().subscribe({
+  //    next: (rows: any[]) => {
+  //      //console.log('All Modules: ',rows);
+
+  //      if (!rows || !rows.length) {
+  //        this.CommonService.hide();
+  //        this.dialogService.openAlert('Alert', 'Failed to load  modules.');
+  //        return;
+  //      }
+
+  //      this.CommonService.show();
+
+  //      this.allModules = rows;
+
+
+  //      this.CommonService.hide();
+
+  //    },
+  //    error: err => {
+  //      this.CommonService.hide();
+  //      console.error(err);
+  //    }
+  //  });
+  //}
+
+  getmodule(): void {
+
+
+
+    this.commonService.show();
+
+    this.ticketService
+      .get_all_modules()
+      .subscribe({
+
+        next: (res: any) => {
+
+          this.commonService.hide();
+
+
+          this.module = res;
+
+        },
+
+        error: (err: any) => {
+
+          this.commonService.hide();
+
+          console.error(err);
+        }
+      });
+  }
+
+}
+
+
