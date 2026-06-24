@@ -1,0 +1,209 @@
+
+import { Component, OnInit, OnDestroy, inject } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { ReactiveFormsModule } from '@angular/forms';
+import { AgGridAngular } from 'ag-grid-angular';
+import { ColDef } from 'ag-grid-community';
+
+import { TicketService } from '../../../services/ticket-service/ticket.service';
+import { DialogService } from '../../../common/dialog-new/dialog.service';
+import { CommonService } from '../../../common/loader/common.service';
+
+import { CommonGridComponent }
+  from '../../../common/common-grid/common-grid.component';
+
+@Component({
+  selector: 'app-unassigned-tickets',
+  standalone: true,
+  imports: [
+    CommonModule,
+    ReactiveFormsModule,
+    AgGridAngular,
+    CommonGridComponent
+  ],
+  templateUrl: './unassigned-tickets.component.html',
+  styleUrls: ['./unassigned-tickets.component.css']
+})
+
+export class UnassignedTicketsComponent implements OnInit, OnDestroy {
+
+  private CommonService = inject(CommonService);
+
+  private ticketService = inject(TicketService);
+
+  private dialogService = inject(DialogService);
+
+  rowData: any[] = [];
+
+  columnDefs: ColDef[] = [];
+
+  ngOnInit(): void {
+
+    this.getAllTickets();`222211111`
+
+  }
+
+  ngOnDestroy(): void {
+
+  }
+
+  getAllTickets() {
+
+    this.CommonService.show();
+
+    this.ticketService.getAllTickets().subscribe({
+
+      next: (res: any) => {
+
+        this.rowData = Array.isArray(res) ? res : [res];
+
+        const hiddenFields: string[] = [
+
+          'TID',
+          'DeletedDate',
+          'Extension',
+          'IsActive',
+          'InsertedBy',
+          'InsertedDate',
+          'UpdatedBy',
+          'UpdatedDate',
+          'DeletedBy'
+
+        ];
+
+        if (res.error === true) {
+
+          this.CommonService.hide();
+
+          this.dialogService.openAlert(
+            'Alert',
+            res.Msg
+          );
+
+          return;
+
+        }
+
+        if (this.rowData.length > 0) {
+
+          this.columnDefs = Object.keys(this.rowData[0]).map(key => ({
+
+            field: key,
+
+            headerName: key,
+
+            sortable: true,
+
+            filter: true,
+
+            resizable: true,
+
+            width: 180,
+
+            hide: hiddenFields.includes(key)
+
+          }));
+
+
+          //// View Button
+
+          //this.columnDefs.unshift({
+
+          //  headerName: 'View',
+
+          //  field: 'view',
+
+          //  width: 100,
+
+          //  pinned: 'left',
+
+          //  sortable: false,
+
+          //  filter: false,
+
+          //  resizable: false,
+
+          //  cellRenderer: (params: any) => {
+
+          //    const btn = document.createElement('button');
+
+          //    btn.className = 'btn btn-primary btn-sm';
+
+          //    btn.innerHTML = 'View';
+
+          //    btn.onclick = () => {
+
+          //      console.log(params.data);
+
+          //    };
+
+          //    return btn;
+
+          //  }
+
+          //});
+
+
+          //// Actions Button
+
+          //this.columnDefs.push({
+
+          //  headerName: 'Actions',
+
+          //  field: 'actions',
+
+          //  width: 140,
+
+          //  cellRenderer: (params: any) => {
+
+          //    const btn = document.createElement('button');
+
+          //    btn.className = 'btn btn-danger btn-sm';
+
+          //    btn.innerHTML = 'Escalate';
+
+          //    btn.onclick = () => {
+
+          //      console.log(params.data);
+
+          //    };
+
+          //    return btn;
+
+          //  }
+
+          //});
+
+        }
+
+        else {
+
+          this.dialogService.openAlert(
+
+            'Alert',
+
+            'No record found.'
+
+          );
+
+        }
+
+        this.CommonService.hide();
+
+      },
+
+      error: (err: any) => {
+
+        console.error(err);
+
+        this.CommonService.hide();
+
+      }
+
+    });
+
+  }
+
+}
+
+
