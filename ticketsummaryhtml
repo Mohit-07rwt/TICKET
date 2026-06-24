@@ -1,0 +1,85 @@
+<div class="cyform-page">
+  <div class="cyform-card">
+
+    <!-- ===================== SECTION HEADER ===================== -->
+    <div class="cyform-head">
+      <span class="cyform-head-bar"></span>
+      <i class="bi bi-clock-fill cyform-head-icon"></i>
+      <span class="cyform-head-title">Ticket Summary Report</span>
+    </div>
+
+    <!-- ===================== FORM ===================== -->
+    <form [formGroup]="timeTrackingForm"
+          appFocusInvalid
+          #focusInvalidDir="appFocusInvalid">
+
+      <div class="cyform-body">
+
+        <div class="row g-3">
+
+          <!-- ================= TICKET / TASK INFO ================= -->
+          <div class="col-12">
+            <div class="cyform-subhead">Ticket /Date Information</div>
+          </div>
+
+          <div class="col-md-6">
+            <mat-form-field appearance="outline" class="w-100">
+              <mat-label>Date From</mat-label>
+              <input matInput
+                     [matDatepicker]="Datefrom"
+                     [min]="mindate"
+                     [max]="maxdate"
+                     formControlName="Datefrom"
+                     readonly
+                     (click)="Datefrom.open()">
+              <mat-datepicker-toggle matIconSuffix [for]="Datefrom"></mat-datepicker-toggle>
+              <mat-datepicker #Datefrom></mat-datepicker>
+            </mat-form-field>
+          </div>
+
+          <div class="col-md-6">
+            <mat-form-field appearance="outline" class="w-100">
+              <mat-label>Date to</mat-label>
+              <input matInput
+                     [matDatepicker]="Dateto"
+                     [min]="mindate"
+                     [max]="maxdate"
+                     formControlName="Dateto"
+                     readonly
+                     (click)="Dateto.open()">
+              <mat-datepicker-toggle matIconSuffix [for]="Dateto"></mat-datepicker-toggle>
+              <mat-datepicker #Dateto></mat-datepicker>
+            </mat-form-field>
+          </div>
+
+          <div class="d-flex justify-content-end mb-3">
+            <button type="button"
+                    class="btn btn-primary cyform-submit"
+                    (click)="loadModuleWiseReport()">
+              <i class="bi bi-download"></i> Report
+            </button>
+
+          </div>
+          <!-- ===================== GRID ===================== -->
+          <div class="cyform-body">
+
+            <app-common-grid [height]="'550px'"
+                             [rowData]="rowData"
+                             [columnDefs]="columnDefs"
+                             [width]="'100%'"
+                             [showCheckbox]="false"
+                             [showContainer]="false"
+                             [showEdit]="false"
+                             [showDelete]="false"
+                             [showDeleteAll]="false"
+                             [showExportButton]="true"
+                             [rowSelection]="{ mode: 'singleRow', enableClickSelection: true, checkboxes: false }">
+            </app-common-grid>
+
+          </div>
+        </div>
+      </div>
+    </form>
+
+  </div>
+</div>
